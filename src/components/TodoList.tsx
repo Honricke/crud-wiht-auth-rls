@@ -1,8 +1,19 @@
 import { useState } from "react";
-import { Check, Calendar, Clock } from "lucide-react";
+import { Check, Calendar, Clock, Pencil, Trash2, Plus, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface Todo {
@@ -50,15 +61,36 @@ const mockTodos: Todo[] = [
 ];
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
+  // Fixed locale to avoid SSR/client hydration mismatch.
+  return new Date(iso).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
+function toInputValue(iso: string) {
+  // yyyy-MM-ddTHH:mm for <input type="datetime-local">
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
+    d.getHours(),
+  )}:${pad(d.getMinutes())}`;
+}
+
+type TodoDraft = {
+  title: string;
+  description: string;
+  due_date: string;
+};
+
+const emptyDraft: TodoDraft = { title: "", description: "", due_date: "" };
+
 export function TodoList() {
   const [todos, setTodos] = useState<Todo[]>(mockTodos);
+  const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<TodoDraft>(emptyDraft);
 
   const toggle = (id: string) =>
     setTodos((prev) =>
@@ -67,14 +99,72 @@ export function TodoList() {
       ),
     );
 
+  const remove = (id: string) =>
+    setTodos((prev) => prev.filter((t) => t.id !== id));
+
+  const openCreate = () => {
+    setEditingId(null);
+    setDraft({
+      ...emptyDraft,
+      due_date: toInputValue(new Date(Date.now() + 86400000).toISOString()),
+    });
+    setOpen(true);
+  };
+
+  const openEdit = (todo: Todo) => {
+    setEditingId(todo.id);
+    setDraft({
+      title: todo.title,
+      description: todo.description,
+      due_date: toInputValue(todo.due_date),
+    });
+    setOpen(true);
+  };
+
+  const save = () => {
+    if (!draft.title.trim()) return;
+    const due = draft.due_date
+      ? new Date(draft.due_date).toISOString()
+      : new Date().toISOString();
+
+    if (editingId) {
+      setTodos((prev) =>
+        prev.map((t) =>
+          t.id === editingId
+            ? { ...t, title: draft.title, description: draft.description, due_date: due }
+            : t,
+        ),
+      );
+    } else {
+      setTodos((prev) => [
+        {
+          id: crypto.randomUUID(),
+          title: draft.title,
+          description: draft.description,
+          created_at: new Date().toISOString(),
+          due_date: due,
+          completed: 0,
+        },
+        ...prev,
+      ]);
+    }
+    setOpen(false);
+  };
+
   return (
     <div className="mx-auto w-full max-w-2xl space-y-3 p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
-        <p className="text-sm text-muted-foreground">
-          {todos.filter((t) => !t.completed).length} pending ·{" "}
-          {todos.filter((t) => t.completed).length} completed
-        </p>
+      <div className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Tasks</h1>
+          <p className="text-sm text-muted-foreground">
+            {todos.filter((t) => !t.completed).length} pending ·{" "}
+            {todos.filter((t) => t.completed).length} completed
+          </p>
+        </div>
+        <Button onClick={openCreate}>
+          <Plus className="h-4 w-4" />
+          New task
+        </Button>
       </div>
 
       {todos.map((todo) => {
@@ -104,8 +194,32 @@ export function TodoList() {
                 >
                   {todo.title}
                 </h3>
-                {overdue && <Badge variant="destructive">Overdue</Badge>}
-                {done && <Badge variant="secondary"><Check className="h-3 w-3" /></Badge>}
+                <div className="flex items-center gap-1">
+                  {overdue && <Badge variant="destructive">Overdue</Badge>}
+                  {done && (
+                    <Badge variant="secondary">
+                      <Check className="h-3 w-3" />
+                    </Badge>
+                  )}
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7"
+                    onClick={() => openEdit(todo)}
+                    aria-label="Edit task"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    onClick={() => remove(todo.id)}
+                    aria-label="Delete task"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
               <p
                 className={cn(
@@ -134,6 +248,67 @@ export function TodoList() {
           </Card>
         );
       })}
+
+      {todos.length === 0 && (
+        <Card className="flex flex-col items-center gap-3 p-10 text-center">
+          <p className="text-sm text-muted-foreground">No tasks yet.</p>
+          <Button variant="outline" onClick={openCreate}>
+            <Plus className="h-4 w-4" />
+            Create your first task
+          </Button>
+        </Card>
+      )}
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Edit task" : "New task"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={draft.title}
+                onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+                placeholder="What needs to be done?"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={draft.description}
+                onChange={(e) =>
+                  setDraft({ ...draft, description: e.target.value })
+                }
+                placeholder="Add some details..."
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="due">Due date</Label>
+              <Input
+                id="due"
+                type="datetime-local"
+                value={draft.due_date}
+                onChange={(e) =>
+                  setDraft({ ...draft, due_date: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              <X className="h-4 w-4" />
+              Cancel
+            </Button>
+            <Button onClick={save} disabled={!draft.title.trim()}>
+              {editingId ? "Save changes" : "Create task"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

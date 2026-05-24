@@ -81,7 +81,7 @@ export function TodoList() {
   }
 
   async function insertTodo() {
-    return await supabase.from("to_do").insert(draft);
+    return await supabase.from("to_do").insert(draft).select();
   }
 
   const toggle = (id: string) =>
@@ -143,9 +143,11 @@ export function TodoList() {
       const response = await insertTodo();
 
       if (response.success) {
+        const id = response.data?.[0]?.id;
+
         setTodos((prev) => [
           {
-            id: crypto.randomUUID(),
+            id: id,
             title: draft.title,
             description: draft.description,
             created_at: new Date().toISOString(),

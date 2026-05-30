@@ -27,14 +27,9 @@ function DashboardPage() {
         <header className="border-b bg-background">
           <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
             <Link to="/dashboard" className="font-semibold tracking-tight">
-              Acme
+              {user?.name}
             </Link>
             <div className="flex items-center gap-3">
-              {/* <Avatar className="h-8 w-8"> */}
-                {/* <AvatarImage src={user.avatar} alt={user.name} /> */}
-                {/* <AvatarFallback>{user?.name}</AvatarFallback> */}
-              {/* </Avatar> */}
-              <span className="text-sm font-medium hidden sm:inline">{user?.name}</span>
               <Button
                 variant="outline"
                 size="sm"

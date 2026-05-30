@@ -76,7 +76,7 @@ export function LoginForm() {
         error={errors.password}
       />
 
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
           <span>Remember me</span>
@@ -88,7 +88,7 @@ export function LoginForm() {
         >
           Forgot password?
         </button>
-      </div>
+      </div> */}
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? (

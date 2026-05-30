@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FormField } from "./FormField";
 import { cn } from "@/lib/utils";
-import { useAuth, mockUser } from "@/lib/auth-context";
+import { supabase } from "@/lib/supabase";
+import { error } from "console";
+import { useAuth } from "@/hooks/useAuth";
 
 function getStrength(pw: string) {
   let score = 0;
@@ -26,7 +28,7 @@ function getStrength(pw: string) {
 
 export function RegisterForm() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { signUp } = useAuth();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -52,22 +54,24 @@ export function RegisterForm() {
 
   async function handleSubmit(ev: FormEvent) {
     ev.preventDefault();
+
+    // valida os campos dos inputs
+    if (!validate()) return;
+
     setServerError(null);
     setSuccess(false);
-    if (!validate()) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1000));
-    if (email === "taken@example.com") {
-      setLoading(false);
-      setServerError("This email is already registered.");
-      return;
-    }
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => {
-      login({ ...mockUser, name, email });
-      navigate({ to: "/dashboard" });
-    }, 800);
+
+    // chama a função de signUp
+    await signUp({ email, password, name })
+      .then((res) => {
+        navigate({ to: "/dashboard" });
+      })
+      .catch((error) => {
+        console.log(error);
+        setLoading(false);
+        setServerError(error.message);
+      });
   }
 
   return (

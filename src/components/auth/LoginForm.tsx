@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FormField } from "./FormField";
-import { useAuth, mockUser } from "@/lib/auth-context";
+import { useAuth } from "@/hooks/useAuth";
+import { AuthError } from "@supabase/supabase-js";
 
 export function LoginForm() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
@@ -32,16 +33,16 @@ export function LoginForm() {
     setServerError(null);
     if (!validate()) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 900));
-    // Mocked: wrong@example.com triggers an error
-    if (email === "wrong@example.com") {
-      setLoading(false);
-      setServerError("Invalid email or password.");
-      return;
-    }
-    login({ ...mockUser, email });
-    setLoading(false);
-    navigate({ to: "/dashboard" });
+
+    await login(email, password)
+      .then((_) => {
+        navigate({ to: "/dashboard" });
+      })
+      .catch(async (error: AuthError) => {
+        console.log(error);
+        setServerError(error.message);
+        setLoading(false);
+      });
   }
 
   return (
@@ -77,10 +78,7 @@ export function LoginForm() {
 
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <Checkbox
-            checked={remember}
-            onCheckedChange={(v) => setRemember(v === true)}
-          />
+          <Checkbox checked={remember} onCheckedChange={(v) => setRemember(v === true)} />
           <span>Remember me</span>
         </label>
         <button

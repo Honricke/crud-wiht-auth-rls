@@ -16,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Todo {
   id: string;
@@ -57,6 +58,7 @@ export function TodoList() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<TodoDraft>(emptyDraft);
+  const { user } = useAuth();
 
   useEffect(() => {
     getToDo();
@@ -81,7 +83,10 @@ export function TodoList() {
   }
 
   async function insertTodo() {
-    return await supabase.from("to_do").insert(draft).select();
+    return await supabase
+      .from("to_do")
+      .insert({ ...draft, user_id: user?.id })
+      .select();
   }
 
   const toggle = (id: string) =>

@@ -28,10 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const getUserProfile = async (id: string | null) => {
     if (!id) return null;
 
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select()
-      .eq("id", id);
+    const { data: profileData, error: _ } = await supabase.from("profiles").select().eq("id", id);
 
     const profile = !!profileData ? ({ ...profileData?.[0] } as Profile) : null;
     return profile;
@@ -59,12 +56,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // gera um listener que fica ouvindo os eventos que envolvem usuário: login, logout e etc
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) =>
-      setUser(await getUserProfile(session?.user.id ?? null)),
-    );
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setUser(await getUserProfile(session?.user.id ?? null));
+    });
 
     // cleanup, só roda quando o componente desmonta (padrão do useEffect) e para de ouvir
-    return subscription.unsubscribe();
+    return () => subscription.unsubscribe();
   }, []);
 
   function logout() {

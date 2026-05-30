@@ -100,10 +100,6 @@ export function LoginForm() {
           "Sign in"
         )}
       </Button>
-
-      <p className="text-xs text-muted-foreground text-center">
-        Tip: use <code>wrong@example.com</code> to see the error state.
-      </p>
     </form>
   );
 }

@@ -159,10 +159,6 @@ export function RegisterForm() {
           "Create account"
         )}
       </Button>
-
-      <p className="text-xs text-muted-foreground text-center">
-        Tip: use <code>taken@example.com</code> to see the error state.
-      </p>
     </form>
   );
 }

@@ -30,11 +30,11 @@ function DashboardPage() {
               Acme
             </Link>
             <div className="flex items-center gap-3">
-              {/* <Avatar className="h-8 w-8">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback>{user.name[0]}</AvatarFallback>
-              </Avatar>
-              <span className="text-sm font-medium hidden sm:inline">{user.name}</span> */}
+              {/* <Avatar className="h-8 w-8"> */}
+                {/* <AvatarImage src={user.avatar} alt={user.name} /> */}
+                {/* <AvatarFallback>{user?.name}</AvatarFallback> */}
+              {/* </Avatar> */}
+              <span className="text-sm font-medium hidden sm:inline">{user?.name}</span>
               <Button
                 variant="outline"
                 size="sm"

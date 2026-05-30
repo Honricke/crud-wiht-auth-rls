@@ -1,11 +1,10 @@
 import { User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "./supabase";
-import { useNavigate } from "@tanstack/react-router";
-import { resolve } from "path";
+import { Profile } from "./types/tables.types";
 
 interface AuthContextValue {
-  user: User | null;
+  user: Profile | null;
   loading: boolean;
   authenticated: boolean;
   logout: () => Promise<boolean>;
@@ -22,8 +21,21 @@ interface SignUp {
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // em User só tem dados do login, os dados do usuário estão em profiles
+  const getUserProfile = async (id: string | null) => {
+    if (!id) return null;
+
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select()
+      .eq("id", id);
+
+    const profile = !!profileData ? ({ ...profileData?.[0] } as Profile) : null;
+    return profile;
+  };
 
   // load the user. Always, after supabase login or signUp he's at supabase session
   // so, getSession, always receive user data (except unlogged users)
@@ -33,9 +45,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // getSession busca só localmente, não valida no supabase,
       // diferente de getUser, por isso é recomendado, pois é mais rápido
-      const res = await supabase.auth.getSession();
+      const { data, error } = await supabase.auth.getSession();
 
-      setUser(res.data.session?.user ?? null);
+      if (!error) {
+        const profile = await getUserProfile(data.session?.user.id ?? null);
+        setUser(profile);
+      }
       setLoading(false);
     }
 
@@ -44,7 +59,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // gera um listener que fica ouvindo os eventos que envolvem usuário: login, logout e etc
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user ?? null));
+    } = supabase.auth.onAuthStateChange(async (_event, session) =>
+      setUser(await getUserProfile(session?.user.id ?? null)),
+    );
 
     // cleanup, só roda quando o componente desmonta (padrão do useEffect) e para de ouvir
     return subscription.unsubscribe();
@@ -93,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const { data: _ , error: insertError } = await supabase.from("profiles").insert({
+      const { data: _, error: insertError } = await supabase.from("profiles").insert({
         id: data.user?.id,
         name: name,
       });

@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { FormField } from "./FormField";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
-import { error } from "console";
 import { useAuth } from "@/hooks/useAuth";
 
 function getStrength(pw: string) {
